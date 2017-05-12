@@ -1,0 +1,63 @@
+Sub nyUnderVersion()
+
+Call createVersion(ActiveDocument.CustomDocumentProperties("Huvudversion"), ActiveDocument.CustomDocumentProperties("Underversion") + 1)
+
+End Sub
+Sub nyHuvudVersion()
+
+Call createVersion(ActiveDocument.CustomDocumentProperties("Huvudversion") + 1, 0)
+
+End Sub
+
+Sub createVersion(mainVersion, subVersion)
+
+' Get description for the update. Abort export if no description is given (or cancel button is pressed).
+Description = InputBox("En pdf- och låst Word-export kommer att göras för version " & mainVersion & "." & subVersion & ". Beskriv kortfattat uppdateringar som gjorts för denna version.", "Spara ny version")
+If Description = "" Then
+    End
+End If
+
+' Update all document properties related to versions.
+ActiveDocument.CustomDocumentProperties("Huvudversion").Value = mainVersion
+ActiveDocument.CustomDocumentProperties("Underversion").Value = subVersion
+ActiveDocument.CustomDocumentProperties("VisadUnderversion").Value = subVersion
+ActiveDocument.Fields.Update
+
+' Update the version history. This requires a bookmark defined in the template.
+Set myRange = ActiveDocument.GoTo(Word.wdGoToBookmark, , , "Versionshistorik")
+myRange.SetRange myRange.Start, myRange.End - 1
+myRange.InsertParagraphAfter
+myRange.InsertAfter "Version " & mainVersion & "." & subVersion & " (" & Format(Date, "yyyy-mm-dd") & "): " & Description
+ActiveDocument.Save
+
+' Build names for export
+OriginalFullName = ActiveDocument.FullName
+OriginalName = ActiveDocument.Name
+If InStrRev(OriginalName, ".") <> 0 Then
+    TruncatedName = Left(OriginalName, InStrRev(OriginalName, ".") - 1)
+Else
+    TruncatedName = OriginalName
+End If
+DocumentPath = ActiveDocument.Path & "\"
+ExportPath = DocumentPath & TruncatedName & "\"
+VersionAppendix = " (version " & mainVersion & "." & subVersion & ")"
+
+' Create a new folder for exports, if it doesn't already exist.
+If Len(Dir(ExportPath, vbDirectory)) = 0 Then
+    MkDir (ExportPath)
+End If
+
+' Export a pdf.
+ActiveDocument.ExportAsFixedFormat ExportPath & TruncatedName & VersionAppendix & ".pdf", Word.WdExportFormat.wdExportFormatPDF
+
+' Export a Word document where only commenting is allowed. This is done by saving as,
+' and then opening the original document.
+ActiveDocument.SaveAs2 ExportPath & TruncatedName & VersionAppendix & ".docx", Word.wdFormatDocumentDefault, True, , False
+Documents.Open (OriginalFullName)
+
+' Set the showed version to e.g. "1.5+", to indicate that the document now continues from 1.5.
+ActiveDocument.CustomDocumentProperties("VisadUnderversion").Value = subVersion & "+"
+ActiveDocument.Fields.Update
+ActiveDocument.Save
+
+End Sub
