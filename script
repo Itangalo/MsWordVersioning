@@ -24,10 +24,12 @@ ActiveDocument.CustomDocumentProperties("VisadUnderversion").Value = subVersion
 ActiveDocument.Fields.Update
 
 ' Update the version history. This requires a bookmark defined in the template.
-Set myRange = ActiveDocument.GoTo(Word.wdGoToBookmark, , , "Versionshistorik")
-myRange.SetRange myRange.Start, myRange.End - 1
-myRange.InsertParagraphAfter
-myRange.InsertAfter "Version " & mainVersion & "." & subVersion & " (" & Format(Date, "yyyy-mm-dd") & "): " & Description
+If ActiveDocument.Bookmarks.Exists("Versionshistorik") = True Then
+    Set myRange = ActiveDocument.GoTo(Word.wdGoToBookmark, , , "Versionshistorik")
+    myRange.SetRange myRange.Start, myRange.End - 1
+    myRange.InsertParagraphAfter
+    myRange.InsertAfter "Version " & mainVersion & "." & subVersion & " (" & Format(Date, "yyyy-mm-dd") & "): " & Description
+End If
 ActiveDocument.Save
 
 ' Build names for export
