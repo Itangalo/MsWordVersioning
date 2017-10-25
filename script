@@ -47,7 +47,7 @@ DocumentPath = ActiveDocument.Path & "\"
 propertyExists = False
 For Each prop In ActiveDocument.CustomDocumentProperties
     If prop.Name = "Exportkatalog" Then
-        If prop.Name <> "0" Then
+        If prop.Name <> "" Then
             propertyExists = True
         End If
         Exit For
@@ -76,5 +76,26 @@ Documents.Open (OriginalFullName)
 ActiveDocument.CustomDocumentProperties("VisadUnderversion").Value = subVersion & "+"
 ActiveDocument.Fields.Update
 ActiveDocument.Save
+
+End Sub
+
+Sub bytExportkatalog()
+
+' Investigate whether the export folder property is set.
+propertyExists = False
+For Each prop In ActiveDocument.CustomDocumentProperties
+    If prop.Name = "Exportkatalog" Then
+        propertyExists = True
+        Exit For
+    End If
+Next prop
+
+If propertyExists = False Then
+    ActiveDocument.CustomDocumentProperties.Add Name:="Exportkatalog", LinkToContent:=False, Value:="", Type:=msoPropertyTypeString
+End If
+
+' Get name for export folder
+ExportFolder = InputBox("Ange namn på underkatalog för exporter. Lämna tomt för att använda dokumentets filnamn.", "", ActiveDocument.CustomDocumentProperties("Exportkatalog").Value)
+ActiveDocument.CustomDocumentProperties("Exportkatalog").Value = ExportFolder
 
 End Sub
