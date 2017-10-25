@@ -40,9 +40,24 @@ If InStrRev(OriginalName, ".") <> 0 Then
 Else
     TruncatedName = OriginalName
 End If
-DocumentPath = ActiveDocument.Path & "\"
-ExportPath = DocumentPath & TruncatedName & "\"
 VersionAppendix = " (version " & mainVersion & "." & subVersion & ")"
+
+' Use special export folder, if set. Code taken from https://stackoverflow.com/questions/29204801/test-whether-a-property-name-exists
+DocumentPath = ActiveDocument.Path & "\"
+propertyExists = False
+For Each prop In ActiveDocument.CustomDocumentProperties
+    If prop.Name = "Exportkatalog" Then
+        If prop.Name <> "0" Then
+            propertyExists = True
+        End If
+        Exit For
+    End If
+Next prop
+If propertyExists = False Then
+    ExportPath = DocumentPath & TruncatedName & "\"
+Else
+    ExportPath = DocumentPath & ActiveDocument.CustomDocumentProperties("Exportkatalog").Value & "\"
+End If
 
 ' Create a new folder for exports, if it doesn't already exist.
 If Len(Dir(ExportPath, vbDirectory)) = 0 Then
