@@ -44,19 +44,10 @@ VersionAppendix = " (version " & mainVersion & "." & subVersion & ")"
 
 ' Use special export folder, if set. Code taken from https://stackoverflow.com/questions/29204801/test-whether-a-property-name-exists
 DocumentPath = ActiveDocument.Path & "\"
-propertyExists = False
-For Each prop In ActiveDocument.CustomDocumentProperties
-    If prop.Name = "Exportkatalog" Then
-        If prop.Name <> "" Then
-            propertyExists = True
-        End If
-        Exit For
-    End If
-Next prop
-If propertyExists = False Then
-    ExportPath = DocumentPath & TruncatedName & "\"
-Else
+If propertyExists("Exportkatalog") And ActiveDocument.CustomDocumentProperties("Exportkatalog").Value <> "" Then
     ExportPath = DocumentPath & ActiveDocument.CustomDocumentProperties("Exportkatalog").Value & "\"
+Else
+    ExportPath = DocumentPath & TruncatedName & "\"
 End If
 
 ' Create a new folder for exports, if it doesn't already exist.
@@ -81,16 +72,8 @@ End Sub
 
 Sub bytExportkatalog()
 
-' Investigate whether the export folder property is set.
-propertyExists = False
-For Each prop In ActiveDocument.CustomDocumentProperties
-    If prop.Name = "Exportkatalog" Then
-        propertyExists = True
-        Exit For
-    End If
-Next prop
-
-If propertyExists = False Then
+' Set an export folder if not already set.
+If Not propertyExists("Exportkatalog") Then
     ActiveDocument.CustomDocumentProperties.Add Name:="Exportkatalog", LinkToContent:=False, Value:="", Type:=msoPropertyTypeString
 End If
 
@@ -99,3 +82,17 @@ ExportFolder = InputBox("Ange namn på underkatalog för exporter. Lämna tomt f
 ActiveDocument.CustomDocumentProperties("Exportkatalog").Value = ExportFolder
 
 End Sub
+
+Function propertyExists(propertyName)
+' Returns True if the given property exists in the active, otherwise False.
+' Code inspired by https://stackoverflow.com/questions/29204801/test-whether-a-property-name-exists
+
+propertyExists = False
+For Each prop In ActiveDocument.CustomDocumentProperties
+    If prop.Name = propertyName Then
+            propertyExists = True
+        Exit For
+    End If
+Next prop
+
+End Function
