@@ -13,7 +13,7 @@ Sub createVersion(mainVersion, subVersion)
 
 ' Get description for the update. Abort export if no description is given (or cancel button is pressed).
 Description = InputBox("En pdf- och låst Word-export kommer att göras för version " & mainVersion & "." & subVersion & ". Beskriv kortfattat uppdateringar som gjorts för denna version.", "Spara ny version")
-If Description = "" Then
+If cancelled(Description) = "" Then
     End
 End If
 
@@ -79,8 +79,10 @@ End If
 
 ' Get name for export folder
 ExportFolder = InputBox("Ange namn på underkatalog för exporter. Lämna tomt för att använda dokumentets filnamn.", "", ActiveDocument.CustomDocumentProperties("Exportkatalog").Value)
-ActiveDocument.CustomDocumentProperties("Exportkatalog").Value = ExportFolder
 
+If Not cancelled(ExportFolder) Then
+    ActiveDocument.CustomDocumentProperties("Exportkatalog").Value = ExportFolder
+End If
 End Sub
 
 Function propertyExists(propertyName)
@@ -95,4 +97,14 @@ For Each prop In ActiveDocument.CustomDocumentProperties
     End If
 Next prop
 
+End Function
+
+Function cancelled(inputResponse)
+' Detects whether an input box was cancelled (compared to a zero-length response).
+
+If StrPtr(inputResponse) = 0 Then
+    cancelled = True
+Else
+    cancelled = False
+End If
 End Function
