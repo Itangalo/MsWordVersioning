@@ -1,38 +1,51 @@
-Sub nyUnderVersion()
+' Code for rudimentary version control in MS Word documents.
+' See https://github.com/Itangalo/MsWordVersioning for more information.
+' Code available under GPL 3.
 
-Call createVersion(ActiveDocument.CustomDocumentProperties("Huvudversion"), ActiveDocument.CustomDocumentProperties("Underversion") + 1)
+Sub newSubVersion()
+' Increase sub version, i.e. 1.5 to 1.6.
+
+mainVersion = getProperty("MainVersion")
+subVersion = getProperty("SubVersion") + 1
+Call createVersion(mainVersion, subVersion)
 
 End Sub
-Sub nyHuvudVersion()
 
-Call createVersion(ActiveDocument.CustomDocumentProperties("Huvudversion") + 1, 0)
+Sub newMainVersion()
+' Increase main version, i.e. 1.5 to 2.0.
+
+mainVersion = getProperty("MainVersion") + 1
+subVersion = 0
+Call createVersion(mainVersion, subVersion)
 
 End Sub
 
 Sub createVersion(mainVersion, subVersion)
+' Creates a new version and exports two frozen document versions.
 
-' Get description for the update. Abort export if no description is given (or cancel button is pressed).
-Description = InputBox("En pdf- och låst Word-export kommer att göras för version " & mainVersion & "." & subVersion & ". Beskriv kortfattat uppdateringar som gjorts för denna version.", "Spara ny version")
-If cancelled(Description) = "" Then
+' Get description for the update.
+Description = InputBox(getInterfaceString("newVersionMessage"), getInterfaceString("saveVersion"))
+If cancelled(Description) Then
     End
 End If
 
 ' Update all document properties related to versions.
-ActiveDocument.CustomDocumentProperties("Huvudversion").Value = mainVersion
-ActiveDocument.CustomDocumentProperties("Underversion").Value = subVersion
-ActiveDocument.CustomDocumentProperties("VisadUnderversion").Value = subVersion
+ActiveDocument.CustomDocumentProperties("MainVersion").Value = mainVersion
+ActiveDocument.CustomDocumentProperties("SubVersion").Value = subVersion
+tmp = getProperty("DisplayedSubVersion", subVersion, msoPropertyTypeString)
+ActiveDocument.CustomDocumentProperties("DisplayedSubVersion").Value = subVersion
 ActiveDocument.Fields.Update
 
-' Update the version history. This requires a bookmark defined in the template.
-If ActiveDocument.Bookmarks.Exists("Versionshistorik") = True Then
-    Set myRange = ActiveDocument.GoTo(Word.wdGoToBookmark, , , "Versionshistorik")
+' Add a row to the version history, if a bookmark for version log is set.
+If ActiveDocument.Bookmarks.Exists("VersionLog") = True Then
+    Set myRange = ActiveDocument.GoTo(Word.wdGoToBookmark, , , "VersionLog")
     myRange.SetRange myRange.Start, myRange.End - 1
     myRange.InsertParagraphAfter
     myRange.InsertAfter "Version " & mainVersion & "." & subVersion & " (" & Format(Date, "yyyy-mm-dd") & "): " & Description
 End If
 ActiveDocument.Save
 
-' Build names for export
+' Build names used for export
 OriginalFullName = ActiveDocument.FullName
 OriginalName = ActiveDocument.Name
 If InStrRev(OriginalName, ".") <> 0 Then
@@ -42,12 +55,12 @@ Else
 End If
 VersionAppendix = " (version " & mainVersion & "." & subVersion & ")"
 
-' Use special export folder, if set. Code taken from https://stackoverflow.com/questions/29204801/test-whether-a-property-name-exists
+' If fixed name for export folder is set, use it. Otherwise, use document name.
 DocumentPath = ActiveDocument.Path & "\"
-If propertyExists("Exportkatalog") And ActiveDocument.CustomDocumentProperties("Exportkatalog").Value <> "" Then
-    ExportPath = DocumentPath & ActiveDocument.CustomDocumentProperties("Exportkatalog").Value & "\"
-Else
+If getProperty("ExportFolder", "", msoPropertyTypeString) = "" Then
     ExportPath = DocumentPath & TruncatedName & "\"
+Else
+    ExportPath = DocumentPath & ActiveDocument.CustomDocumentProperties("ExportFolder").Value & "\"
 End If
 
 ' Create a new folder for exports, if it doesn't already exist.
@@ -61,32 +74,33 @@ ActiveDocument.ExportAsFixedFormat ExportPath & TruncatedName & VersionAppendix 
 ' Export a Word document where only commenting is allowed. This is done by saving as,
 ' and then opening the original document.
 ActiveDocument.SaveAs2 ExportPath & TruncatedName & VersionAppendix & ".docx", Word.wdFormatDocumentDefault, True, , False
-Documents.Open (OriginalFullName)
+ActiveDocument.Close
 
 ' Set the showed version to e.g. "1.5+", to indicate that the document now continues from 1.5.
-ActiveDocument.CustomDocumentProperties("VisadUnderversion").Value = subVersion & "+"
+Documents.Open (OriginalFullName)
+ActiveDocument.CustomDocumentProperties("DisplayedSubVersion").Value = subVersion & "+"
 ActiveDocument.Fields.Update
 ActiveDocument.Save
 
+' Show a message saying that all is well.
+MsgBox (getInterfaceString("exportComplete"))
+
 End Sub
 
-Sub bytExportkatalog()
+Sub changeExportFolder()
+' Allows changing the folder for document exports via an input box.
 
-' Set an export folder if not already set.
-If Not propertyExists("Exportkatalog") Then
-    ActiveDocument.CustomDocumentProperties.Add Name:="Exportkatalog", LinkToContent:=False, Value:="", Type:=msoPropertyTypeString
-End If
-
-' Get name for export folder
-ExportFolder = InputBox("Ange namn på underkatalog för exporter. Lämna tomt för att använda dokumentets filnamn.", "", ActiveDocument.CustomDocumentProperties("Exportkatalog").Value)
+ExportFolder = getProperty("ExportFolder", "", msoPropertyTypeString)
+ExportFolder = InputBox(getInterfaceString("exportFolderMessage"), "", ExportFolder)
 
 If Not cancelled(ExportFolder) Then
-    ActiveDocument.CustomDocumentProperties("Exportkatalog").Value = ExportFolder
+    ActiveDocument.CustomDocumentProperties("ExportFolder").Value = ExportFolder
 End If
+
 End Sub
 
 Function propertyExists(propertyName)
-' Returns True if the given property exists in the active, otherwise False.
+' Returns True if the given property exists in the active document, otherwise False.
 ' Code inspired by https://stackoverflow.com/questions/29204801/test-whether-a-property-name-exists
 
 propertyExists = False
@@ -99,6 +113,29 @@ Next prop
 
 End Function
 
+Function getProperty(propertyName, Optional defaultValue = 0, Optional propertyType = msoPropertyTypeNumber)
+' Returns the given property. If it does not exist, it is created and given the default value.
+
+If Not propertyExists(propertyName) Then
+    ActiveDocument.CustomDocumentProperties.Add Name:=propertyName, LinkToContent:=False, Value:=defaultValue, Type:=propertyType
+End If
+
+getProperty = ActiveDocument.CustomDocumentProperties(propertyName).Value
+
+End Function
+
+Sub setVersionLog()
+' Sets the currently selected range to the document version log.
+
+' Delete any current bookmark with the same name.
+If ActiveDocument.Bookmarks.Exists("VersionLog") = True Then
+     ActiveDocument.Bookmarks(Index:="VersionLog").Delete
+End If
+
+ActiveDocument.Bookmarks.Add Name:="VersionLog", Range:=Selection.Range
+
+End Sub
+
 Function cancelled(inputResponse)
 ' Detects whether an input box was cancelled (compared to a zero-length response).
 
@@ -107,4 +144,56 @@ If StrPtr(inputResponse) = 0 Then
 Else
     cancelled = False
 End If
+
+End Function
+
+Function getInterfaceString(context, Optional forceEnglish = False)
+' Rudimentary localization functionality.
+
+' Used for detecting fallbacks to English, when translations are missing.
+If forceEnglish Then
+    languageCode = "en"
+Else
+    languageCode = getProperty("languageCode", "en", msoPropertyTypeString)
+End If
+
+' Get the interface string in the selected language.
+getInterfaceString = ""
+Select Case languageCode
+    ' Copy and translate the English phrases to add a new language.
+    Case "en"
+    Select Case context
+        Case "newVersionMessage"
+            getInterfaceString = "A pdf and a locked Word document will be made for the new version. Enter a log message describing the changes made."
+        Case "saveVersion"
+            getInterfaceString = "Save new version"
+        Case "exportFolderMessage"
+            getInterfaceString = "Choose name for export folder. Leave empty to use document file name."
+        Case "exportComplete"
+            getInterfaceString = "A pdf and a locked Word document has been exported."
+    End Select
+
+    Case "sv"
+    ' Swedish translation.
+    Select Case context
+        Case "newVersionMessage"
+            getInterfaceString = "En pdf och ett låst Word-dokument kommer att göras för den nya versionen. Skriv ett loggmeddelande som beskriver de ändringar som gjorts."
+        Case "saveVersion"
+            getInterfaceString = "Spara ny version"
+        Case "exportFolderMessage"
+            getInterfaceString = "Ange namn på underkatalog för exporter. Lämna tomt för att använda dokumentets filnamn."
+        Case "exportComplete"
+            getInterfaceString = "En pdf och ett låst Word-dokument har exporterats."
+    End Select
+End Select
+
+' Detect if translation is missing, or interface string is missing.
+If getInterfaceString = "" Then
+    If languageCode = "en" Then
+        getInterfaceString = "Interface string missing. (id: " & context & ")"
+    Else
+        getInterfaceString = getInterfaceString(context, True)
+    End If
+End If
+
 End Function
