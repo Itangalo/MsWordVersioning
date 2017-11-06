@@ -29,11 +29,11 @@ If cancelled(Description) Then
     End
 End If
 
-' Update all document properties related to versions.
+' Update all document properties related to versions. Ensure that DisplayedVersion exists.
 ActiveDocument.CustomDocumentProperties("MainVersion").Value = mainVersion
 ActiveDocument.CustomDocumentProperties("SubVersion").Value = subVersion
-tmp = getProperty("DisplayedSubVersion", subVersion, msoPropertyTypeString)
-ActiveDocument.CustomDocumentProperties("DisplayedSubVersion").Value = subVersion
+tmp = getProperty("DisplayedVersion", "0.0", msoPropertyTypeString)
+ActiveDocument.CustomDocumentProperties("DisplayedVersion").Value = mainVersion & "." & subVersion
 ActiveDocument.Fields.Update
 
 ' Add a row to the version history, if a bookmark for version log is set.
@@ -45,7 +45,7 @@ If ActiveDocument.Bookmarks.Exists("VersionLog") = True Then
 End If
 ActiveDocument.Save
 
-' Build names used for export
+' Build file/folder names used for export
 OriginalFullName = ActiveDocument.FullName
 OriginalName = ActiveDocument.Name
 If InStrRev(OriginalName, ".") <> 0 Then
@@ -76,14 +76,23 @@ ActiveDocument.ExportAsFixedFormat ExportPath & TruncatedName & VersionAppendix 
 ActiveDocument.SaveAs2 ExportPath & TruncatedName & VersionAppendix & ".docx", Word.wdFormatDocumentDefault, True, , False
 ActiveDocument.Close
 
-' Set the showed version to e.g. "1.5+", to indicate that the document now continues from 1.5.
+' Set the displayed version to e.g. "1.5+", to indicate that the document now continues from 1.5.
 Documents.Open (OriginalFullName)
-ActiveDocument.CustomDocumentProperties("DisplayedSubVersion").Value = subVersion & "+"
+ActiveDocument.CustomDocumentProperties("DisplayedVersion").Value = mainVersion & "." & subVersion & "+"
 ActiveDocument.Fields.Update
 ActiveDocument.Save
 
 ' Show a message saying that all is well.
 MsgBox (getInterfaceString("exportComplete"))
+
+End Sub
+
+Sub insertVersionNumber()
+' Inserts the version number at the cursor/selection.
+
+' Ensure that the DisplayedVersion property exists before inserting it.
+tmp = getProperty("DisplayedVersion", "0.0", msoPropertyTypeString)
+Selection.Fields.Add Range:=Selection.Range, Type:=wdFieldEmpty, Text:="DOCPROPERTY DisplayedVersion"
 
 End Sub
 
