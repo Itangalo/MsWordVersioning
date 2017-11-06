@@ -161,16 +161,16 @@ Function getInterfaceString(context, Optional forceEnglish = False)
 
 ' Used for detecting fallbacks to English, when translations are missing.
 If forceEnglish Then
-    languageCode = "en"
+    languageCode = msoLanguageIDEnglishUS
 Else
-    languageCode = getProperty("languageCode", "en", msoPropertyTypeString)
+    languageCode = Application.Language
 End If
 
 ' Get the interface string in the selected language.
 getInterfaceString = ""
 Select Case languageCode
     ' Copy and translate the English phrases to add a new language.
-    Case "en"
+    Case msoLanguageIDEnglishUS
     Select Case context
         Case "newVersionMessage"
             getInterfaceString = "A pdf and a locked Word document will be made for the new version. Enter a log message describing the changes made."
@@ -182,8 +182,8 @@ Select Case languageCode
             getInterfaceString = "A pdf and a locked Word document has been exported."
     End Select
 
-    Case "sv"
     ' Swedish translation.
+    Case msoLanguageIDSwedish
     Select Case context
         Case "newVersionMessage"
             getInterfaceString = "En pdf och ett låst Word-dokument kommer att göras för den nya versionen. Skriv ett loggmeddelande som beskriver de ändringar som gjorts."
@@ -198,7 +198,7 @@ End Select
 
 ' Detect if translation is missing, or interface string is missing.
 If getInterfaceString = "" Then
-    If languageCode = "en" Then
+    If languageCode = msoLanguageIDEnglishUS Then
         getInterfaceString = "Interface string missing. (id: " & context & ")"
     Else
         getInterfaceString = getInterfaceString(context, True)
