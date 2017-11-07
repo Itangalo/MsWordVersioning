@@ -2,6 +2,13 @@
 ' See https://github.com/Itangalo/MsWordVersioning for more information.
 ' Code available under GPL 3.
 
+Sub about()
+' Displays a link for more information.
+
+MsgBox (getInterfaceString("aboutMessage"))
+
+End Sub
+
 Sub newSubVersion()
 ' Increase sub version, i.e. 1.5 to 1.6.
 
@@ -172,6 +179,8 @@ Select Case languageCode
     ' Copy and translate the English phrases to add a new language.
     Case msoLanguageIDEnglishUS
     Select Case context
+        Case "aboutMessage"
+            getInterfaceString = "See github.com/Itangalo/MsWordVersioning for documentation and more information."
         Case "newVersionMessage"
             getInterfaceString = "A pdf and a locked Word document will be made for the new version. Enter a log message describing the changes made."
         Case "saveVersion"
@@ -185,6 +194,8 @@ Select Case languageCode
     ' Swedish translation.
     Case msoLanguageIDSwedish
     Select Case context
+        Case "aboutMessage"
+            getInterfaceString = "Se github.com/Itangalo/MsWordVersioning för dokumentation och mer information."
         Case "newVersionMessage"
             getInterfaceString = "En pdf och ett låst Word-dokument kommer att göras för den nya versionen. Skriv ett loggmeddelande som beskriver de ändringar som gjorts."
         Case "saveVersion"
