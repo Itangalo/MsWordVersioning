@@ -1,6 +1,32 @@
 # MsWordVersioning
 MS Word script for (basic) version control of documents.
 
+## What does it do?
+
+* Allows creating new main or sub versions (ie 1.5 -> 2.0 or 1.5 -> 1.6) of a document. This includes:
+** Exporting a pdf and a comment-only Word document, for example for sharing or archiving.
+** Adding a line to the change log for the document.
+* Automatically keeping track of version number, and allows inserting this as a field in your document.
+
+### Other features
+
+* Set the folder name, to where exported documents are saved. (Defaults to document name.)
+* Set the bookmark used for inserting change log for the document.
+* Tries to use the same language as the Ms Word interface. Currently US English (fallback) and Swedish supported.
+
+## Why document versioning?
+
+* You write a document in several steps, and want to keep track of each version of the document.
+* You mistaningly believe that you write a document once-and-for-all, but realize that you need to update it later on.
+* You want to circulate a document for comments in one or more steps.
+* You are tired of multiple versions of the same document, and looking at last save date to see which is the most recent.
+* You are tired of trying to merge together different versions of a document, that have been edited independently. Possibly in several steps.
+* You are tired of realizing too late that there was *another* version of the same document, with suggested changes that you have not taken into account.
+
+## Why not document versioning?
+
+* You have a really small hard drive.
+
 ## Så fungerar versionshanteringen
 
 Det finns ett makro för att skapa nya undervserioner av ett dokument (exempelvis 1.3 till 1.4) och ett för att skapa ny huvudversion (exempelvis 1.4 till 2.0). När något av dessa makron körs händer följande:
