@@ -17,11 +17,12 @@ MS Word script for (basic) version control of documents.
 ## Why document versioning?
 
 * You write a document in several steps, and want to keep track of each version of the document.
-* You mistaningly believe that you write a document once-and-for-all, but realize that you need to update it later on.
-* You want to circulate a document for comments in one or more steps.
-* You are tired of multiple versions of the same document, and looking at last save date to see which is the most recent.
+* You mistaningly believe that you write a document once-and-for-all, but later on realize that you need to update it.
+* You want to circulate a document for comments.
+* You are tired of multiple versions of the same document and comparing last save date to see which is the most recent.
 * You are tired of trying to merge together different versions of a document, that have been edited independently. Possibly in several steps.
 * You are tired of realizing too late that there was *another* version of the same document, with suggested changes that you have not taken into account.
+* You are tired of document names with prefix *FINAL final*.
 
 ## Why not document versioning?
 
