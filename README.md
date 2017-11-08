@@ -4,8 +4,8 @@ MS Word script for (basic) version control of documents.
 ## What does it do?
 
 * Allows creating new main or sub versions (ie 1.5 -> 2.0 or 1.5 -> 1.6) of a document. This includes:
- * Exporting a pdf and a comment-only Word document, for example for sharing or archiving.
- * Adding a line to the change log for the document.
+  * Exporting a pdf and a comment-only Word document, for example for sharing or archiving.
+  * Adding a line to the change log for the document.
 * Automatically keeping track of version number, and allows inserting this as a field in your document.
 
 ### Other features
@@ -25,9 +25,9 @@ MS Word script for (basic) version control of documents.
 
 ## Why not document versioning?
 
-* You have a really small hard drive.
+* You have really limited disk space.
 
-## How to use
+## How to install
 
 1. Copy the script into Word. This is probably easiest done by (a) open the script file, press the *raw* button and copy all the content, (b) pressing alt + F8 in Word to open the macro dialogue and then pressing edit or create, followed by (c) pasting all the code, saving and closing the code environment.
 2. Allow running macros in Word. This is done by going to file -> options -> security center -> setting for security center and allowing macros. **Note that this also means that other macros can run in macro-enabled documents. Don't open macro-enabled documents you don't trust.**
@@ -35,7 +35,16 @@ MS Word script for (basic) version control of documents.
 
 To use the script more smoothly, it is also recommended that you add some buttons to the toolbar.
 
-4. ...
+4. Right-click on the toolbar and select customize.
+5. Add the macros to the desired place in the toolbar. It's easier to find the macros if you limit the list of actions to only macros.
+6. Rename or give new icons to the new actions, if you like.
+
+## How to use
+
+* newSubVersion: This prompts you for a message for the change log, whereafter the version numer is increased a minor step (ie 1.5 -> 1.6). Timestamp and change log message is added to the change log, then a pdf and a locked Word document is exported.
+* newMainVersion: Like the previous macro, but increases version number a major step (ie 1.5 -> 2.0).
+* insertVersionNumber: Inserts a field at the cursor showing the version number of the document.
+* setVersionLog
 
 
 ## Så fungerar versionshanteringen
