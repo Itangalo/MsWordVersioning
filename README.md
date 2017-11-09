@@ -30,7 +30,7 @@ MS Word script for (basic) version control of documents.
 
 ## How to install
 
-1. Copy the script into Word. This is probably easiest done by (a) open the script file, press the *raw* button and copy all the content, (b) pressing alt + F8 in Word to open the macro dialogue and then pressing edit or create, followed by (c) pasting all the code, saving and closing the code environment.
+1. Copy the script into Word. This is probably easiest done by (a) open the script file here on GitHub, press the *raw* button and copy all the content, (b) pressing alt + F8 in Word to open the macro dialogue and then pressing edit or create, followed by (c) pasting all the code, saving and closing the code environment.
 2. Allow running macros in Word. This is done by going to file -> options -> security center -> setting for security center and allowing macros. **Note that this also means that other macros can run in macro-enabled documents. Don't open macro-enabled documents you don't trust.**
 3. To be able to use the script you also need to save your document(s) as macro-enabled documents, or macro-enabled document templates.
 
@@ -48,3 +48,9 @@ To use the script more smoothly, it is also recommended that you add some button
 * setVersionLog: Marks the selected section as the change log (by inserting a bookmark), which means that new log messages will be added there. Works better if a section is selected, than if nothing is selected.
 * changeExportFolder: Prompts you for a name for the folder to use for exports. No folder name (default) means that the folder will have the same name as the document.
 * about: Displays a link leading to the project page on GitHub (here).
+
+## Extra information for tech people
+
+* Version number is saved as a document property, which can be edited through the relevant settings in Word.
+* The change log is found using a bookmark, which can be changed manually through the relevant settings in Word.
+* The interface language is detected through the application setting. Additional translations can be easily added -- look at the end of the script file.
