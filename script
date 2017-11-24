@@ -5,7 +5,7 @@
 Sub about()
 ' Displays a link for more information.
 
-MsgBox (getInterfaceString("aboutMessage", , "MsWordVersioning 1.0"))
+MsgBox (getInterfaceString("aboutMessage", , "MsWordVersioning 1.1"))
 
 End Sub
 
@@ -80,8 +80,8 @@ ActiveDocument.ExportAsFixedFormat ExportPath & TruncatedName & VersionAppendix 
 
 ' Export a Word document where only commenting is allowed. This is done by saving as,
 ' and then opening the original document.
-ActiveDocument.SaveAs2 ExportPath & TruncatedName & VersionAppendix & ".docx", Word.wdFormatDocumentDefault, True, , False
-ActiveDocument.Close
+exportedFullName = ExportPath & TruncatedName & VersionAppendix & ".docx"
+ActiveDocument.SaveAs2 exportedFullName, Word.wdFormatDocumentDefault, True, , False
 
 ' Set the displayed version to e.g. "1.5+", to indicate that the document now continues from 1.5.
 Documents.Open (OriginalFullName)
@@ -89,7 +89,9 @@ ActiveDocument.CustomDocumentProperties("DisplayedVersion").Value = mainVersion 
 ActiveDocument.Fields.Update
 ActiveDocument.Save
 
-' Show a message saying that all is well.
+' Close the exported copy. Show a message saying that all is well.
+Documents.Open (exportedFullName)
+ActiveDocument.Close
 MsgBox (getInterfaceString("exportComplete"))
 
 End Sub
