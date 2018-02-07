@@ -11,7 +11,7 @@ MS Word script for (basic) version control of documents.
 ### Other features
 
 * Set the folder name, to where exported documents are saved. (Defaults to document name.)
-* Set the bookmark used for inserting change log for the document.
+* Writes log messages to a txt file and optionally inserts log messages into document (at a specified bookmark).
 * Tries to use the same language as the Ms Word interface. Currently US English (fallback) and Swedish supported.
 
 ## Why document versioning?
