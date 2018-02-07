@@ -113,7 +113,7 @@ If ActiveDocument.Bookmarks.Exists("VersionLog") = True Then
     Set myRange = ActiveDocument.GoTo(Word.wdGoToBookmark, , , "VersionLog")
     myRange.SetRange myRange.Start, myRange.End - 1
     myRange.InsertParagraphAfter
-    myRange.InsertAfter "Version " & mainVersion & "." & subVersion & " (" & Format(Date, "yyyy-mm-dd") & "): " & LogMessage
+    myRange.InsertAfter "Version " & getProperty("MainVersion") & "." & getProperty("SubVersion") & " (" & Format(Date, "yyyy-mm-dd") & "): " & LogMessage
 End If
 ActiveDocument.Save
 
@@ -126,7 +126,7 @@ LogFile = ExportPath & "\" & getDocumentName() & " (log).txt"
 FileNumber = FreeFile()
 Open LogFile For Append As #FileNumber
 
-Print #FileNumber, Format(Date, "yyyy-mm-dd") & ": " & LogMessage
+Print #FileNumber, "Version " & getProperty("MainVersion") & "." & getProperty("SubVersion") & " (" & Format(Date, "yyyy-mm-dd") & "): " & LogMessage
 Close #FileNumber
 
 End Function
