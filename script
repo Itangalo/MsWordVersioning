@@ -5,7 +5,7 @@
 Sub about()
 ' Displays a link for more information.
 
-MsgBox (getInterfaceString("aboutMessage", , "MsWordVersioning 1.2"))
+MsgBox (getInterfaceString("aboutMessage"))
 
 End Sub
 
@@ -31,8 +31,8 @@ Sub createVersion(mainVersion, subVersion)
 ' Creates a new version and exports two frozen document versions.
 
 ' Get description for the update.
-Description = InputBox(getInterfaceString("newVersionMessage"), getInterfaceString("saveVersion"))
-If cancelled(Description) Then
+LogMessage = InputBox(getInterfaceString("newVersionMessage"), getInterfaceString("saveVersion"))
+If cancelled(LogMessage) Then
     End
 End If
 
@@ -43,45 +43,32 @@ tmp = getProperty("DisplayedVersion", "0.0", msoPropertyTypeString)
 ActiveDocument.CustomDocumentProperties("DisplayedVersion").Value = mainVersion & "." & subVersion
 ActiveDocument.Fields.Update
 
-' Add a row to the version history, if a bookmark for version log is set.
-If ActiveDocument.Bookmarks.Exists("VersionLog") = True Then
-    Set myRange = ActiveDocument.GoTo(Word.wdGoToBookmark, , , "VersionLog")
-    myRange.SetRange myRange.Start, myRange.End - 1
-    myRange.InsertParagraphAfter
-    myRange.InsertAfter "Version " & mainVersion & "." & subVersion & " (" & Format(Date, "yyyy-mm-dd") & "): " & Description
-End If
-ActiveDocument.Save
-
 ' Build file/folder names used for export
 OriginalFullName = ActiveDocument.FullName
-OriginalName = ActiveDocument.Name
-If InStrRev(OriginalName, ".") <> 0 Then
-    TruncatedName = Left(OriginalName, InStrRev(OriginalName, ".") - 1)
-Else
-    TruncatedName = OriginalName
-End If
-VersionAppendix = " (version " & mainVersion & "." & subVersion & ")"
-
-' If fixed name for export folder is set, use it. Otherwise, use document name.
 DocumentPath = ActiveDocument.Path & "\"
+TruncatedName = getDocumentName()
 If getProperty("ExportFolder", "", msoPropertyTypeString) = "" Then
     ExportPath = DocumentPath & TruncatedName & "\"
 Else
     ExportPath = DocumentPath & ActiveDocument.CustomDocumentProperties("ExportFolder").Value & "\"
 End If
+VersionAppendix = " (version " & mainVersion & "." & subVersion & ")"
 
 ' Create a new folder for exports, if it doesn't already exist.
 If Len(Dir(ExportPath, vbDirectory)) = 0 Then
     MkDir (ExportPath)
 End If
 
+' Write log message
+Call writeLog(LogMessage, ExportPath)
+
 ' Export a pdf.
 ActiveDocument.ExportAsFixedFormat ExportPath & TruncatedName & VersionAppendix & ".pdf", Word.WdExportFormat.wdExportFormatPDF
 
 ' Export a Word document where only commenting is allowed. This is done by saving as,
 ' and then opening the original document.
-exportedFullName = ExportPath & TruncatedName & VersionAppendix & ".docx"
-ActiveDocument.SaveAs2 exportedFullName, Word.wdFormatDocumentDefault, True, , False
+ActiveDocument.SaveAs2 ExportPath & TruncatedName & VersionAppendix & ".docx", Word.wdFormatDocumentDefault, True, , False
+ExportedFullName = ActiveDocument.FullName
 
 ' Set the displayed version to e.g. "1.5+", to indicate that the document now continues from 1.5.
 Documents.Open (OriginalFullName)
@@ -89,9 +76,11 @@ ActiveDocument.CustomDocumentProperties("DisplayedVersion").Value = mainVersion 
 ActiveDocument.Fields.Update
 ActiveDocument.Save
 
-' Close the exported copy. Show a message saying that all is well.
-Documents.Open (exportedFullName)
+' Close the exported document.
+Documents.Open (ExportedFullName)
 ActiveDocument.Close
+
+' Show a message saying that all is well.
 MsgBox (getInterfaceString("exportComplete"))
 
 End Sub
@@ -117,29 +106,44 @@ End If
 
 End Sub
 
-Sub setMainVersion()
-' Allows for setting the main version number manually.
+Function writeLog(LogMessage, ExportPath)
 
-currentMainVersion = getProperty("MainVersion")
-mainVersion = InputBox(getInterfaceString("setMainVersionMessage"), "", currentMainVersion)
+' Add a row to the in-document version history, if a bookmark for version log is set.
+If ActiveDocument.Bookmarks.Exists("VersionLog") = True Then
+    Set myRange = ActiveDocument.GoTo(Word.wdGoToBookmark, , , "VersionLog")
+    myRange.SetRange myRange.Start, myRange.End - 1
+    myRange.InsertParagraphAfter
+    myRange.InsertAfter "Version " & mainVersion & "." & subVersion & " (" & Format(Date, "yyyy-mm-dd") & "): " & LogMessage
+End If
+ActiveDocument.Save
 
-If Not cancelled(mainVersion) Then
-    ActiveDocument.CustomDocumentProperties("MainVersion").Value = mainVersion
+' Write log message to a text file in the export folder.
+Dim FileNumber As Integer
+Dim LogFile As String
+
+LogFile = ExportPath & "\" & getDocumentName() & " (log).txt"
+
+FileNumber = FreeFile()
+Open LogFile For Append As #FileNumber
+
+Print #FileNumber, Format(Date, "yyyy-mm-dd") & ": " & LogMessage
+Close #FileNumber
+
+End Function
+
+Function getDocumentName()
+' Returns the document name without any file name extension.
+
+OriginalName = ActiveDocument.Name
+If InStrRev(OriginalName, ".") <> 0 Then
+    TruncatedName = Left(OriginalName, InStrRev(OriginalName, ".") - 1)
+Else
+    TruncatedName = OriginalName
 End If
 
-End Sub
+getDocumentName = TruncatedName
 
-Sub setSubVersion()
-' Allows for setting the sub version number manually.
-
-currentSubVersion = getProperty("SubVersion")
-subVersion = InputBox(getInterfaceString("setSubVersionMessage"), "", currentSubVersion)
-
-If Not cancelled(subVersion) Then
-    ActiveDocument.CustomDocumentProperties("SubVersion").Value = subVersion
-End If
-
-End Sub
+End Function
 
 Function propertyExists(propertyName)
 ' Returns True if the given property exists in the active document, otherwise False.
@@ -215,10 +219,6 @@ Select Case languageCode
             getInterfaceString = "Choose name for export folder. Leave empty to use document file name."
         Case "exportComplete"
             getInterfaceString = "A pdf and a locked Word document has been exported."
-        Case "setMainVersionMessage"
-            getInterfaceString = "Set new main version number."
-        Case "setSubVersionMessage"
-            getInterfaceString = "Set new sub version number."
     End Select
 
     ' Swedish translation.
@@ -234,10 +234,6 @@ Select Case languageCode
             getInterfaceString = "Ange namn på underkatalog för exporter. Lämna tomt för att använda dokumentets filnamn."
         Case "exportComplete"
             getInterfaceString = "En pdf och ett låst Word-dokument har exporterats."
-        Case "setMainVersionMessage"
-            getInterfaceString = "Ange nytt nummer för huvudversion."
-        Case "setSubVersionMessage"
-            getInterfaceString = "Ange nytt nummer för underversion."
     End Select
 End Select
 
