@@ -5,7 +5,7 @@
 Sub about()
 ' Displays a link for more information.
 
-MsgBox (getInterfaceString("aboutMessage"))
+MsgBox (getInterfaceString("aboutMessage", , "MsWordVersioning 1.3"))
 
 End Sub
 
@@ -106,14 +106,40 @@ End If
 
 End Sub
 
+Sub setMainVersion()
+' Allows for setting the main version number manually.
+
+currentMainVersion = getProperty("MainVersion")
+mainVersion = InputBox(getInterfaceString("setMainVersionMessage"), "", currentMainVersion)
+
+If Not cancelled(mainVersion) Then
+    ActiveDocument.CustomDocumentProperties("MainVersion").Value = mainVersion
+End If
+
+End Sub
+
+Sub setSubVersion()
+' Allows for setting the sub version number manually.
+
+currentSubVersion = getProperty("SubVersion")
+subVersion = InputBox(getInterfaceString("setSubVersionMessage"), "", currentSubVersion)
+
+If Not cancelled(subVersion) Then
+    ActiveDocument.CustomDocumentProperties("SubVersion").Value = subVersion
+End If
+
+End Sub
+
 Function writeLog(LogMessage, ExportPath)
+
+CompleteMessage = "Version " & getProperty("MainVersion") & "." & getProperty("SubVersion") & " (" & Format(Date, "yyyy-mm-dd") & ", " & Application.UserName & "): " & LogMessage
 
 ' Add a row to the in-document version history, if a bookmark for version log is set.
 If ActiveDocument.Bookmarks.Exists("VersionLog") = True Then
     Set myRange = ActiveDocument.GoTo(Word.wdGoToBookmark, , , "VersionLog")
     myRange.SetRange myRange.Start, myRange.End - 1
     myRange.InsertParagraphAfter
-    myRange.InsertAfter "Version " & getProperty("MainVersion") & "." & getProperty("SubVersion") & " (" & Format(Date, "yyyy-mm-dd") & "): " & LogMessage
+    myRange.InsertAfter CompleteMessage
 End If
 ActiveDocument.Save
 
@@ -125,8 +151,7 @@ LogFile = ExportPath & "\" & getDocumentName() & " (log).txt"
 
 FileNumber = FreeFile()
 Open LogFile For Append As #FileNumber
-
-Print #FileNumber, "Version " & getProperty("MainVersion") & "." & getProperty("SubVersion") & " (" & Format(Date, "yyyy-mm-dd") & "): " & LogMessage
+Print #FileNumber, CompleteMessage
 Close #FileNumber
 
 End Function
@@ -219,6 +244,10 @@ Select Case languageCode
             getInterfaceString = "Choose name for export folder. Leave empty to use document file name."
         Case "exportComplete"
             getInterfaceString = "A pdf and a locked Word document has been exported."
+        Case "setMainVersionMessage"
+            getInterfaceString = "Set new main version number."
+        Case "setSubVersionMessage"
+            getInterfaceString = "Set new sub version number."
     End Select
 
     ' Swedish translation.
@@ -234,6 +263,10 @@ Select Case languageCode
             getInterfaceString = "Ange namn på underkatalog för exporter. Lämna tomt för att använda dokumentets filnamn."
         Case "exportComplete"
             getInterfaceString = "En pdf och ett låst Word-dokument har exporterats."
+        Case "setMainVersionMessage"
+            getInterfaceString = "Ange nytt nummer för huvudversion."
+        Case "setSubVersionMessage"
+            getInterfaceString = "Ange nytt nummer för underversion."
     End Select
 End Select
 
