@@ -1,0 +1,256 @@
+
+Sub newSubVersion()
+' Increase sub version, i.e. 1.5 to 1.6.
+
+mainVersion = getProperty("MainVersion")
+subVersion = getProperty("SubVersion") + 1
+Call createVersion(mainVersion, subVersion)
+
+End Sub
+
+Sub newMainVersion()
+' Increase main version, i.e. 1.5 to 2.0.
+
+mainVersion = getProperty("MainVersion") + 1
+subVersion = 0
+Call createVersion(mainVersion, subVersion)
+
+End Sub
+
+Sub createVersion(mainVersion, subVersion)
+' Creates a new version and exports two frozen document versions.
+
+' Get description for the update.
+LogMessage = InputBox(getInterfaceString("newVersionMessage"), getInterfaceString("saveVersion"))
+If cancelled(LogMessage) Then
+    End
+End If
+
+' Update all document properties related to versions. Ensure that DisplayedVersion exists.
+ActivePresentation.CustomDocumentProperties("MainVersion").Value = mainVersion
+ActivePresentation.CustomDocumentProperties("SubVersion").Value = subVersion
+tmp = getProperty("DisplayedVersion", "0.0", msoPropertyTypeString)
+ActivePresentation.CustomDocumentProperties("DisplayedVersion").Value = mainVersion & "." & subVersion
+
+' Build file/folder names used for export
+OriginalFullName = ActivePresentation.FullName
+DocumentPath = ActivePresentation.Path & "\"
+TruncatedName = getDocumentName()
+If getProperty("ExportFolder", "", msoPropertyTypeString) = "" Then
+    ExportPath = DocumentPath & TruncatedName & "\"
+Else
+    ExportPath = DocumentPath & ActivePresentation.CustomDocumentProperties("ExportFolder").Value & "\"
+End If
+VersionAppendix = " (version " & mainVersion & "." & subVersion & ")"
+
+' Create a new folder for exports, if it doesn't already exist.
+If Len(Dir(ExportPath, vbDirectory)) = 0 Then
+    MkDir (ExportPath)
+End If
+
+' Write log message
+Call writeLog(LogMessage, ExportPath)
+
+' Export a pdf.
+'ActiveDocument.ExportAsFixedFormat ExportPath & TruncatedName & VersionAppendix & ".pdf", Word.WdExportFormat.wdExportFormatPDF
+
+' Export a PowerPoint presentation where only commenting is allowed. This is done by saving as,
+' and then opening the original document.
+'ActivePresentation.Final = False
+ExportedFullName = ExportPath & TruncatedName & VersionAppendix
+ActivePresentation.ExportAsFixedFormat2 Path:=ExportedFullName & ".pdf", FixedFormatType:=ppFixedFormatTypePDF
+ActivePresentation.SaveAs FileName:=ExportedFullName & ".pptx", FileFormat:=ppSaveAsStrictOpenXMLPresentation
+ActivePresentation.Final = True
+ExportedFullName = ActivePresentation.FullName
+
+
+
+
+' Set the displayed version to e.g. "1.5+", to indicate that the document now continues from 1.5.
+Presentations.Open (OriginalFullName)
+'ActivePresentation.Final = False
+ActivePresentation.Save
+
+' Close the exported document.
+Presentations.Open (ExportedFullName)
+ActivePresentation.Close
+
+' Show a message saying that all is well.
+MsgBox (getInterfaceString("exportComplete"))
+
+End Sub
+
+Sub insertVersionNumber()
+' Inserts the version number at the cursor/selection.
+
+' Ensure that the DisplayedVersion property exists before inserting it.
+tmp = getProperty("DisplayedVersion", "0.0", msoPropertyTypeString)
+Selection.Fields.Add Range:=Selection.Range, Type:=wdFieldEmpty, Text:="DOCPROPERTY DisplayedVersion"
+
+End Sub
+
+Sub changeExportFolder()
+' Allows changing the folder for document exports via an input box.
+
+ExportFolder = getProperty("ExportFolder", "", msoPropertyTypeString)
+ExportFolder = InputBox(getInterfaceString("exportFolderMessage"), "", ExportFolder)
+
+If Not cancelled(ExportFolder) Then
+    ActivePresentation.CustomDocumentProperties("ExportFolder").Value = ExportFolder
+End If
+
+End Sub
+
+Sub setMainVersion()
+' Allows for setting the main version number manually.
+
+currentMainVersion = getProperty("MainVersion")
+mainVersion = InputBox(getInterfaceString("setMainVersionMessage"), "", currentMainVersion)
+
+If Not cancelled(mainVersion) Then
+    ActivePresentation.CustomDocumentProperties("MainVersion").Value = mainVersion
+End If
+
+End Sub
+
+Sub setSubVersion()
+' Allows for setting the sub version number manually.
+
+currentSubVersion = getProperty("SubVersion")
+subVersion = InputBox(getInterfaceString("setSubVersionMessage"), "", currentSubVersion)
+
+If Not cancelled(subVersion) Then
+    ActivePresentation.CustomDocumentProperties("SubVersion").Value = subVersion
+End If
+
+End Sub
+
+Function writeLog(LogMessage, ExportPath)
+
+CompleteMessage = "Version " & getProperty("MainVersion") & "." & getProperty("SubVersion") & " (" & Format(Date, "yyyy-mm-dd") & "): " & LogMessage
+
+' Write log message to a text file in the export folder.
+Dim FileNumber As Integer
+Dim LogFile As String
+
+LogFile = ExportPath & "\" & getDocumentName() & " (log).txt"
+
+FileNumber = FreeFile()
+Open LogFile For Append As #FileNumber
+Print #FileNumber, CompleteMessage
+Close #FileNumber
+
+End Function
+
+Function getDocumentName()
+' Returns the document name without any file name extension.
+
+OriginalName = ActivePresentation.Name
+If InStrRev(OriginalName, ".") <> 0 Then
+    TruncatedName = Left(OriginalName, InStrRev(OriginalName, ".") - 1)
+Else
+    TruncatedName = OriginalName
+End If
+
+getDocumentName = TruncatedName
+
+End Function
+
+Function propertyExists(propertyName)
+' Returns True if the given property exists in the active document, otherwise False.
+' Code inspired by https://stackoverflow.com/questions/29204801/test-whether-a-property-name-exists
+
+propertyExists = False
+For Each prop In ActivePresentation.CustomDocumentProperties
+    If prop.Name = propertyName Then
+            propertyExists = True
+        Exit For
+    End If
+Next prop
+
+End Function
+
+Function getProperty(propertyName, Optional defaultValue = 0, Optional propertyType = msoPropertyTypeNumber)
+' Returns the given property. If it does not exist, it is created and given the default value.
+
+If Not propertyExists(propertyName) Then
+    ActivePresentation.CustomDocumentProperties.Add Name:=propertyName, LinkToContent:=False, Value:=defaultValue, Type:=propertyType
+End If
+
+getProperty = ActivePresentation.CustomDocumentProperties(propertyName).Value
+
+End Function
+
+Function cancelled(inputResponse)
+' Detects whether an input box was cancelled (compared to a zero-length response).
+
+If StrPtr(inputResponse) = 0 Then
+    cancelled = True
+Else
+    cancelled = False
+End If
+
+End Function
+
+Function getInterfaceString(context, Optional forceEnglish = False)
+' Rudimentary localization functionality.
+
+' Used for detecting fallbacks to English, when translations are missing.
+'If forceEnglish Then
+    languageCode = msoLanguageIDEnglishUS
+'Else
+'    languageCode = Application.Language
+'End If
+
+' Get the interface string in the selected language.
+getInterfaceString = ""
+Select Case languageCode
+    ' Copy and translate the English phrases to add a new language.
+    Case msoLanguageIDEnglishUS
+    Select Case context
+        Case "aboutMessage"
+            getInterfaceString = "See github.com/Itangalo/MsWordVersioning for documentation and more information."
+        Case "newVersionMessage"
+            getInterfaceString = "A pdf and a locked Word document will be made for the new version. Enter a log message describing the changes made."
+        Case "saveVersion"
+            getInterfaceString = "Save new version"
+        Case "exportFolderMessage"
+            getInterfaceString = "Choose name for export folder. Leave empty to use document file name."
+        Case "exportComplete"
+            getInterfaceString = "A pdf and a locked Word document has been exported."
+        Case "setMainVersionMessage"
+            getInterfaceString = "Set new main version number."
+        Case "setSubVersionMessage"
+            getInterfaceString = "Set new sub version number."
+    End Select
+
+    ' Swedish translation.
+    Case msoLanguageIDSwedish
+    Select Case context
+        Case "aboutMessage"
+            getInterfaceString = "Se github.com/Itangalo/MsWordVersioning för dokumentation och mer information."
+        Case "newVersionMessage"
+            getInterfaceString = "En pdf och ett låst Word-dokument kommer att göras för den nya versionen. Skriv ett loggmeddelande som beskriver de ändringar som gjorts."
+        Case "saveVersion"
+            getInterfaceString = "Spara ny version"
+        Case "exportFolderMessage"
+            getInterfaceString = "Ange namn på underkatalog för exporter. Lämna tomt för att använda dokumentets filnamn."
+        Case "exportComplete"
+            getInterfaceString = "En pdf och ett låst Word-dokument har exporterats."
+        Case "setMainVersionMessage"
+            getInterfaceString = "Ange nytt nummer för huvudversion."
+        Case "setSubVersionMessage"
+            getInterfaceString = "Ange nytt nummer för underversion."
+    End Select
+End Select
+
+' Detect if translation is missing, or interface string is missing.
+If getInterfaceString = "" Then
+    If languageCode = msoLanguageIDEnglishUS Then
+        getInterfaceString = "Interface string missing. (id: " & context & ")"
+    Else
+        getInterfaceString = getInterfaceString(context, True)
+    End If
+End If
+
+End Function
